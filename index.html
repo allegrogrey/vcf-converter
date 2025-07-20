@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCF to Excel Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #07232F;
+            min-height: 100vh;
+            color: #FFFFFF;
+            line-height: 1.6;
+        }
+        
+        .container {
+            background: #FFFFFF;
+            border-radius: 0;
+            padding: 60px 50px;
+            box-shadow: none;
+            color: #07232F;
+        }
+        
+        .header {
+            margin-bottom: 50px;
+        }
+        
+        h1 {
+            color: #07232F;
+            margin: 0 0 8px 0;
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            color: #9CA9B9;
+            margin: 0;
+            font-size: 16px;
+            font-weight: 400;
+        }
+        
+        .upload-area {
+            border: 2px solid #DBE2EA;
+            border-radius: 0;
+            padding: 60px 40px;
+            text-align: center;
+            background: #FFFFFF;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .upload-area:hover {
+            border-color: #0100FE;
+            background: #F8F9FA;
+        }
+        
+        .upload-area.dragover {
+            border-color: #0100FE;
+            background: #F0F0FF;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #9CA9B9;
+        }
+        
+        .upload-text {
+            color: #07232F;
+            font-size: 20px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .upload-subtext {
+            color: #9CA9B9;
+            font-size: 14px;
+            font-weight: 400;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .btn {
+            background: #0100FE;
+            color: #FFFFFF;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 0;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-top: 20px;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.25px;
+        }
+        
+        .btn:hover {
+            background: #0000E6;
+            transform: translateY(-1px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .preview {
+            margin-top: 40px;
+            padding: 40px;
+            background: #DBE2EA;
+            border-radius: 0;
+            border-left: 4px solid #0100FE;
+        }
+        
+        .preview h3 {
+            color: #07232F;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .contact-count {
+            color: #07232F;
+            font-weight: 500;
+            margin-bottom: 24px;
+            font-size: 16px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-height: 300px;
+            border: 1px solid #9CA9B9;
+            border-radius: 0;
+            background: #FFFFFF;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #DBE2EA;
+        }
+        
+        th {
+            background: #F8F9FA;
+            font-weight: 600;
+            color: #07232F;
+            position: sticky;
+            top: 0;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        td {
+            color: #07232F;
+        }
+        
+        tr:hover {
+            background: #F8F9FA;
+        }
+        
+        .status {
+            padding: 20px;
+            border-radius: 0;
+            margin-top: 20px;
+            font-weight: 500;
+            border-left: 4px solid;
+        }
+        
+        .status.success {
+            background: #F0F8FF;
+            color: #07232F;
+            border-left-color: #0100FE;
+        }
+        
+        .status.error {
+            background: #FFF0F0;
+            color: #07232F;
+            border-left-color: #FF0000;
+        }
+        
+        .buttons-container {
+            margin-top: 30px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .instructions {
+            margin-top: 40px;
+            padding: 40px;
+            background: #F8F9FA;
+            border-radius: 0;
+            border-left: 4px solid #0100FE;
+        }
+        
+        .instructions h4 {
+            color: #07232F;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .instructions p {
+            color: #07232F;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }
+        
+        .instructions p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .csv-display {
+            margin-top: 30px;
+            padding: 40px;
+            background: #F0F8FF;
+            border-radius: 0;
+            border-left: 4px solid #0100FE;
+        }
+        
+        .csv-display h4 {
+            color: #07232F;
+            margin-bottom: 16px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .csv-display p {
+            color: #07232F;
+            margin-bottom: 16px;
+        }
+        
+        .csv-display textarea {
+            width: 100%;
+            height: 200px;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 12px;
+            padding: 16px;
+            border: 1px solid #9CA9B9;
+            border-radius: 0;
+            resize: vertical;
+            background: #FFFFFF;
+            color: #07232F;
+        }
+        
+        .csv-buttons {
+            margin-top: 16px;
+            display: flex;
+            gap: 12px;
+        }
+        
+        .copy-btn {
+            background: #0100FE;
+            color: #FFFFFF;
+        }
+        
+        .copy-btn:hover {
+            background: #0000E6;
+        }
+        
+        .close-btn {
+            background: #FF4444;
+            color: white;
+        }
+        
+        .close-btn:hover {
+            background: #E03333;
+        }
+        
+        .upgrade-section {
+            margin-top: 30px;
+            padding: 40px;
+            background: #F0F8FF;
+            border-radius: 0;
+            border-left: 4px solid #0100FE;
+            text-align: center;
+        }
+        
+        .upgrade-section h3 {
+            color: #07232F;
+            margin-bottom: 16px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .upgrade-section p {
+            color: #07232F;
+            margin-bottom: 24px;
+            font-size: 16px;
+        }
+        
+        .price {
+            font-size: 32px;
+            font-weight: 700;
+            color: #0100FE;
+            margin: 20px 0;
+        }
+        
+        .email-input {
+            width: 100%;
+            max-width: 300px;
+            padding: 12px 16px;
+            border: 1px solid #9CA9B9;
+            border-radius: 0;
+            font-size: 16px;
+            margin-bottom: 20px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .email-input:focus {
+            outline: none;
+            border-color: #0100FE;
+        }
+        
+        .check-payment-btn {
+            background: #9CA9B9;
+            color: #FFFFFF;
+            margin-left: 12px;
+        }
+        
+        .check-payment-btn:hover {
+            background: #8A95A5;
+        }
+        
+        .payment-status {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 0;
+            font-weight: 500;
+        }
+        
+        .payment-status.verified {
+            background: #F0FFF4;
+            color: #07232F;
+            border: 1px solid #06FF89;
+        }
+        
+        .payment-status.not-found {
+            background: #FFF0F0;
+            color: #07232F;
+            border: 1px solid #FF4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>VCF to Excel Converter</h1>
+            <p class="subtitle">Convert your iPhone contacts (.vcf file) to Excel format</p>
+        </div>
+        
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()" role="button" tabindex="0" aria-label="Click to select your .vcf file or drag and drop it here" onkeydown="if(event.key==='Enter'||event.key===' ') document.getElementById('fileInput').click()">
+            <div class="upload-icon" aria-hidden="true">📂</div>
+            <div class="upload-text">Click to select your .vcf file</div>
+            <div class="upload-subtext">or drag and drop it here</div>
+        </div>
+        
+        <input type="file" id="fileInput" accept=".vcf" aria-label="Select VCF file to convert" />
+        
+        <div id="status"></div>
+        <div id="preview"></div>
+    </div>
+
+    <script>
+        // Stripe configuration
+        const STRIPE_PUBLISHABLE_KEY = 'pk_live_51RmnHgFFgvIqssGSi31QkxyO4AYyVNTc1Cj7IzJghcqwQXpucgHhnC9AWTZBGHtYm9lGBMdGGEEBR1Qv3wQg1Ipl00NUdaVUT3';
+        const STRIPE_PRICE_ID = 'price_1RmnYuFFgvIqssGS8WyLcSdW';
+        
+        let stripe = null;
+        
+        // Initialize Stripe when the script loads
+        function initializeStripe() {
+            try {
+                if (typeof Stripe !== 'undefined') {
+                    stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+                    console.log('Stripe initialized successfully');
+                } else {
+                    console.log('Stripe not yet loaded, retrying...');
+                    setTimeout(initializeStripe, 100);
+                }
+            } catch (error) {
+                console.error('Stripe initialization error:', error);
+            }
+        }
+        
+        // Start initialization when page loads
+        window.addEventListener('load', initializeStripe);
+        
+        // Configuration
+        const FREE_CONTACT_LIMIT = 100;
+        let parsedContacts = [];
+        let userEmail = '';
+        let hasPremiumAccess = false;
+        
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.querySelector('.upload-area');
+        const statusDiv = document.getElementById('status');
+        const previewDiv = document.getElementById('preview');
+        
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            console.log('Files dropped:', files.length);
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            console.log('File input changed, files:', e.target.files.length);
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        function showStatus(message, type = 'success') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function handleFile(file) {
+            console.log('File selected:', file.name, 'Size:', file.size);
+            
+            if (!file.name.toLowerCase().endsWith('.vcf')) {
+                showStatus('Please select a .vcf file', 'error');
+                return;
+            }
+            
+            showStatus('Reading file...', 'success');
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                console.log('File read successfully, content length:', e.target.result.length);
+                try {
+                    parseVCF(e.target.result);
+                } catch (error) {
+                    console.error('Parse error:', error);
+                    showStatus('Error reading file: ' + error.message, 'error');
+                }
+            };
+            
+            reader.onerror = (e) => {
+                console.error('File read error:', e);
+                showStatus('Error reading file', 'error');
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        function parseVCF(vcfContent) {
+            console.log('Starting VCF parse, content preview:', vcfContent.substring(0, 200));
+            
+            parsedContacts = [];
+            const cards = vcfContent.split('BEGIN:VCARD');
+            
+            console.log('Found', cards.length - 1, 'potential vCard entries');
+            
+            for (let i = 1; i < cards.length; i++) {
+                const card = 'BEGIN:VCARD' + cards[i];
+                const contact = parseVCard(card);
+                if (contact && Object.keys(contact).length > 1) {
+                    parsedContacts.push(contact);
+                }
+            }
+            
+            console.log('Successfully parsed', parsedContacts.length, 'contacts');
+            console.log('Sample contact:', parsedContacts[0]);
+            
+            if (parsedContacts.length === 0) {
+                showStatus('No valid contacts found in the file. Please check if this is a valid VCF file.', 'error');
+                return;
+            }
+            
+            showStatus(`Successfully parsed ${parsedContacts.length} contacts!`);
+            showPreview();
+        }
+        
+        function parseVCard(cardText) {
+            const contact = {};
+            const lines = cardText.split('\n');
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (!line || line.startsWith('BEGIN:') || line.startsWith('END:')) continue;
+                
+                const colonIndex = line.indexOf(':');
+                if (colonIndex === -1) continue;
+                
+                let property = line.substring(0, colonIndex);
+                const value = line.substring(colonIndex + 1);
+                
+                // Handle parameters (like TYPE=WORK)
+                const semicolonIndex = property.indexOf(';');
+                let params = '';
+                if (semicolonIndex !== -1) {
+                    params = property.substring(semicolonIndex + 1);
+                    property = property.substring(0, semicolonIndex);
+                }
+                
+                switch (property) {
+                    case 'FN':
+                        contact['Full Name'] = value;
+                        break;
+                    case 'N':
+                        const nameParts = value.split(';');
+                        contact['Last Name'] = nameParts[0] || '';
+                        contact['First Name'] = nameParts[1] || '';
+                        contact['Middle Name'] = nameParts[2] || '';
+                        break;
+                    case 'EMAIL':
+                        const emailType = params.includes('TYPE=WORK') ? 'Work Email' : 
+                                        params.includes('TYPE=HOME') ? 'Home Email' : 'Email';
+                        contact[emailType] = value;
+                        break;
+                    case 'TEL':
+                        let phoneType = 'Phone';
+                        if (params.includes('TYPE=CELL') || params.includes('TYPE=MOBILE')) {
+                            phoneType = 'Mobile Phone';
+                        } else if (params.includes('TYPE=WORK')) {
+                            phoneType = 'Work Phone';
+                        } else if (params.includes('TYPE=HOME')) {
+                            phoneType = 'Home Phone';
+                        }
+                        contact[phoneType] = value;
+                        break;
+                    case 'ADR':
+                        const addrParts = value.split(';');
+                        const addrType = params.includes('TYPE=WORK') ? 'Work' : 'Home';
+                        contact[`${addrType} Street`] = addrParts[2] || '';
+                        contact[`${addrType} City`] = addrParts[3] || '';
+                        contact[`${addrType} State`] = addrParts[4] || '';
+                        contact[`${addrType} ZIP`] = addrParts[5] || '';
+                        contact[`${addrType} Country`] = addrParts[6] || '';
+                        break;
+                    case 'ORG':
+                        contact['Company'] = value;
+                        break;
+                    case 'TITLE':
+                        contact['Job Title'] = value;
+                        break;
+                    case 'URL':
+                        contact['Website'] = value;
+                        break;
+                    case 'NOTE':
+                        contact['Notes'] = value;
+                        break;
+                    case 'BDAY':
+                        contact['Birthday'] = value;
+                        break;
+                }
+            }
+            
+            return contact;
+        }
+        
+        function showPreview() {
+            if (parsedContacts.length === 0) return;
+            
+            // Check if user hits the free limit
+            const hitLimit = parsedContacts.length > FREE_CONTACT_LIMIT && !hasPremiumAccess;
+            const contactsToShow = hitLimit ? parsedContacts.slice(0, FREE_CONTACT_LIMIT) : parsedContacts;
+            
+            // Get all unique columns
+            const allColumns = new Set();
+            contactsToShow.forEach(contact => {
+                Object.keys(contact).forEach(key => allColumns.add(key));
+            });
+            const columns = Array.from(allColumns).sort();
+            
+            let html = `
+                <h3>📊 Preview</h3>
+                <div class="contact-count">${parsedContacts.length} contacts found</div>
+            `;
+            
+            if (hitLimit) {
+                html += `
+                    <div class="upgrade-section">
+                        <h3>🚀 Upgrade to Premium</h3>
+                        <p>You have <strong>${parsedContacts.length} contacts</strong>, but free users can only convert <strong>${FREE_CONTACT_LIMIT} contacts</strong>.</p>
+                        <div class="price">$9.99</div>
+                        <p>One-time payment for unlimited lifetime use</p>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <input type="email" id="userEmail" class="email-input" placeholder="Enter your email address" />
+                        </div>
+                        
+                        <button class="btn" onclick="handlePayment()">Purchase Premium Access</button>
+                        <button class="btn check-payment-btn" onclick="checkPaymentStatus()">Already Paid? Check Status</button>
+                        
+                        <div id="paymentStatus"></div>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                ${columns.map(col => `<th>${col}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            // Show first 5 contacts as preview
+            const previewContacts = contactsToShow.slice(0, 5);
+            previewContacts.forEach(contact => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    html += `<td>${contact[col] || ''}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                ${contactsToShow.length > 5 ? `<p style="margin-top: 16px; color: #9CA9B9; font-size: 14px;">Showing first 5 of ${contactsToShow.length} contacts${hitLimit ? ' (free limit applied)' : ''}</p>` : ''}
+            `;
+            
+            if (!hitLimit) {
+                html += `
+                    <div class="buttons-container">
+                        <button class="btn" onclick="generateCSV()" title="Generate CSV format for manual saving" aria-label="Generate CSV format">📄 Generate CSV</button>
+                        <button class="btn" onclick="copyToClipboard()" title="Copy data to clipboard for pasting into Excel" aria-label="Copy data to clipboard">📋 Copy Data</button>
+                    </div>
+                    
+                    <div class="instructions">
+                        <h4>📖 How to Use</h4>
+                        <p><strong>🔷 📄 Generate CSV</strong> - Creates CSV data you can copy and save as a .csv file to open in Excel. Scroll down to see data.</p>
+                        <p><strong>🔷 📋 Copy Data</strong> - Copies the data directly to clipboard so you can paste it straight into Excel (this is usually the quickest method)</p>
+                    </div>
+                `;
+            }
+            
+            previewDiv.innerHTML = html;
+        }
+        
+        function generateCSV() {
+            if (parsedContacts.length === 0) {
+                showStatus('No contacts to export', 'error');
+                return;
+            }
+            
+            // Check premium access for large files
+            if (parsedContacts.length > FREE_CONTACT_LIMIT && !hasPremiumAccess) {
+                showStatus('Premium access required for files with more than ' + FREE_CONTACT_LIMIT + ' contacts', 'error');
+                return;
+            }
+            
+            try {
+                // Remove any existing CSV displays first
+                const existingCSV = document.querySelector('[data-csv-display="true"]');
+                if (existingCSV) {
+                    existingCSV.remove();
+                }
+                
+                // Use all contacts if premium, or limited if free
+                const contactsToExport = hasPremiumAccess ? parsedContacts : parsedContacts.slice(0, FREE_CONTACT_LIMIT);
+                
+                // Get all unique columns
+                const allColumns = new Set();
+                contactsToExport.forEach(contact => {
+                    Object.keys(contact).forEach(key => allColumns.add(key));
+                });
+                const columns = Array.from(allColumns).sort();
+                
+                // Create CSV content
+                let csvContent = columns.map(col => `"${col}"`).join(',') + '\n';
+                
+                contactsToExport.forEach(contact => {
+                    const row = columns.map(col => {
+                        const value = contact[col] || '';
+                        return `"${value.toString().replace(/"/g, '""')}"`;
+                    }).join(',');
+                    csvContent += row + '\n';
+                });
+                
+                // Display CSV content in a text area for copying
+                const csvDisplay = document.createElement('div');
+                csvDisplay.setAttribute('data-csv-display', 'true');
+                csvDisplay.className = 'csv-display';
+                csvDisplay.innerHTML = `
+                    <h4>📄 CSV Data Generated</h4>
+                    <p>Copy this data and paste it into a new text file, then save it as "contacts.csv":</p>
+                    <textarea readonly>${csvContent}</textarea>
+                    <div class="csv-buttons">
+                        <button class="btn copy-btn" onclick="copyTextToClipboard('${csvContent.replace(/'/g, "\\'")}'); this.textContent='✅ Copied!'; setTimeout(() => this.textContent='📋 Copy CSV Data', 2000)" title="Copy CSV data to clipboard" aria-label="Copy CSV data to clipboard">📋 Copy CSV Data</button>
+                        <button class="btn close-btn" onclick="this.parentElement.parentElement.remove()" title="Close CSV display" aria-label="Close CSV display">✕ Close</button>
+                    </div>
+                    <p style="margin-top: 16px; color: #9CA9B9; font-size: 14px;"><strong>Instructions:</strong> Copy the data above, open Notepad or any text editor, paste it, and save as "contacts.csv". Then you can open this CSV file in Excel.</p>
+                `;
+                
+                // Insert the CSV display right after the buttons, before the "How to Use" section
+                const instructionsSection = previewDiv.querySelector('.instructions');
+                if (instructionsSection) {
+                    previewDiv.insertBefore(csvDisplay, instructionsSection);
+                } else {
+                    previewDiv.appendChild(csvDisplay);
+                }
+                
+                showStatus(`CSV data generated for ${contactsToExport.length} contacts!`);
+                
+            } catch (error) {
+                console.error('Error generating CSV:', error);
+                showStatus('Error generating CSV: ' + error.message, 'error');
+            }
+        }
+        
+        function copyToClipboard() {
+            if (parsedContacts.length === 0) {
+                showStatus('No contacts to copy', 'error');
+                return;
+            }
+            
+            // Check premium access for large files
+            if (parsedContacts.length > FREE_CONTACT_LIMIT && !hasPremiumAccess) {
+                showStatus('Premium access required for files with more than ' + FREE_CONTACT_LIMIT + ' contacts', 'error');
+                return;
+            }
+            
+            try {
+                // Use all contacts if premium, or limited if free
+                const contactsToExport = hasPremiumAccess ? parsedContacts : parsedContacts.slice(0, FREE_CONTACT_LIMIT);
+                
+                // Get all unique columns
+                const allColumns = new Set();
+                contactsToExport.forEach(contact => {
+                    Object.keys(contact).forEach(key => allColumns.add(key));
+                });
+                const columns = Array.from(allColumns).sort();
+                
+                // Create tab-separated data (good for pasting into Excel)
+                let tabData = columns.join('\t') + '\n';
+                
+                contactsToExport.forEach(contact => {
+                    const row = columns.map(col => contact[col] || '').join('\t');
+                    tabData += row + '\n';
+                });
+                
+                navigator.clipboard.writeText(tabData).then(() => {
+                    showStatus(`${contactsToExport.length} contacts copied to clipboard! You can now paste directly into Excel (Ctrl+V).`);
+                }).catch(() => {
+                    // Fallback if clipboard API doesn't work
+                    const textArea = document.createElement('textarea');
+                    textArea.value = tabData;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showStatus(`${contactsToExport.length} contacts copied to clipboard! You can now paste directly into Excel (Ctrl+V).`);
+                });
+                
+            } catch (error) {
+                console.error('Error copying to clipboard:', error);
+                showStatus('Error copying to clipboard: ' + error.message, 'error');
+            }
+        }
+        
+        function copyTextToClipboard(text) {
+            navigator.clipboard.writeText(text).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            });
+        }
+        
+        // Payment functions
+        async function handlePayment() {
+            const emailInput = document.getElementById('userEmail');
+            const email = emailInput.value.trim();
+            
+            if (!email || !email.includes('@')) {
+                showStatus('Please enter a valid email address', 'error');
+                return;
+            }
+            
+            if (!stripe) {
+                showStatus('Payment system not available. Please try again later.', 'error');
+                return;
+            }
+            
+            userEmail = email;
+            
+            try {
+                showStatus('Redirecting to secure payment...', 'success');
+                
+                // Redirect to Stripe Checkout
+                const {error} = await stripe.redirectToCheckout({
+                    lineItems: [{
+                        price: STRIPE_PRICE_ID,
+                        quantity: 1,
+                    }],
+                    mode: 'payment',
+                    customerEmail: email,
+                    successUrl: window.location.href + '?payment=success&email=' + encodeURIComponent(email),
+                    cancelUrl: window.location.href + '?payment=cancelled',
+                });
+                
+                if (error) {
+                    console.error('Stripe checkout error:', error);
+                    showStatus('Payment failed: ' + error.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Payment error:', error);
+                showStatus('Payment failed. Please try again.', 'error');
+            }
+        }
+            const emailInput = document.getElementById('userEmail');
+            const email = emailInput.value.trim();
+            
+            if (!email || !email.includes('@')) {
+                showStatus('Please enter your email address to check payment status', 'error');
+                return;
+            }
+            
+            // Check if email is in paid users list
+            const paidUsers = JSON.parse(localStorage.getItem('paidUsers') || '[]');
+            const statusDiv = document.getElementById('paymentStatus');
+            
+            if (paidUsers.includes(email)) {
+                userEmail = email;
+                hasPremiumAccess = true;
+                statusDiv.innerHTML = '<div class="payment-status verified">✅ Premium access verified! You have unlimited use.</div>';
+                showStatus('Premium access verified!', 'success');
+                
+                // Refresh the preview to show all contacts
+                setTimeout(() => {
+                    showPreview();
+                }, 1000);
+            } else {
+                statusDiv.innerHTML = '<div class="payment-status not-found">❌ No payment found for this email address.</div>';
+            }
+        }
+        
+        function handleSuccessfulPayment(email) {
+            // Store payment status (in real app, this would be verified server-side)
+            const paidUsers = JSON.parse(localStorage.getItem('paidUsers') || '[]');
+            if (!paidUsers.includes(email)) {
+                paidUsers.push(email);
+                localStorage.setItem('paidUsers', JSON.stringify(paidUsers));
+            }
+            
+            userEmail = email;
+            hasPremiumAccess = true;
+            
+            showStatus('Payment successful! You now have unlimited access.', 'success');
+            
+            // Refresh the preview to show all contacts
+            showPreview();
+        }
+        
+        // Check for payment success on page load
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentStatus = urlParams.get('payment');
+            const email = urlParams.get('email');
+            
+            if (paymentStatus === 'success' && email) {
+                handleSuccessfulPayment(decodeURIComponent(email));
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (paymentStatus === 'cancelled') {
+                showStatus('Payment was cancelled. You can try again anytime.', 'error');
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
