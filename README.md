@@ -6,7 +6,7 @@ A free, browser-based tool to convert iPhone contacts (.vcf files) to Excel form
 - Convert VCF files to Excel format
 - Works entirely in your browser (no data uploaded)
 - Supports all contact fields (name, phone, email, address)
-- Free to use
+- Free to try for under 100 contacts
 
 ## Live Demo
 Visit: https://allegrogrey.github.io/vcf-converter
